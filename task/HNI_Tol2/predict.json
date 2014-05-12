@@ -1,0 +1,30 @@
+{
+    "task" : "predictOnRealCase",
+    "input" : [
+               ["Oryzias_latipes_transposon_Tol2_DNA", "Cls3_0.ipd.input"],
+               ["Oryzias_latipes_transposon_Tol2_DNA", "Cls3_1.ipd.input"],
+               ["Oryzias_latipes_transposon_Tol2_DNA", "Cls3_2.ipd.input"],
+               ["Oryzias_latipes_transposon_Tol2_DNA", "Cls3_3.ipd.input"],
+               ["Oryzias_latipes_transposon_Tol2_DNA", "Cls3_4.ipd.input"],
+               ["Oryzias_latipes_transposon_Tol2_DNA", "Cls3_5.ipd.input"],
+               ["Oryzias_latipes_transposon_Tol2_DNA", "Cls3_6.ipd.input"],
+               ["Oryzias_latipes_transposon_Tol2_DNA", "Cls3_7.ipd.input"],
+               ["Oryzias_latipes_transposon_Tol2_DNA", "Cls3_8.ipd.input"],
+               ["Oryzias_latipes_transposon_Tol2_DNA", "Cls3_9.ipd.input"],
+               ["Oryzias_latipes_transposon_Tol2_DNA", "Cls3_10.ipd.input"],
+               ["Oryzias_latipes_transposon_Tol2_DNA", "Cls3_11.ipd.input"],
+               ["Oryzias_latipes_transposon_Tol2_DNA", "Cls5_0.ipd.input"],
+               ["Oryzias_latipes_transposon_Tol2_DNA", "Cls5_1.ipd.input"],
+               ["Oryzias_latipes_transposon_Tol2_DNA", "Cls5_2.ipd.input"],
+               ["Oryzias_latipes_transposon_Tol2_DNA", "Cls5_3.ipd.input"],
+               ["Oryzias_latipes_transposon_Tol2_DNA", "Cls5_4.ipd.input"],
+               ["Oryzias_latipes_transposon_Tol2_DNA", "Cls5_5.ipd.input"],
+               ["Oryzias_latipes_transposon_Tol2_DNA", "Cls5_6.ipd.input"],
+               ["Oryzias_latipes_transposon_Tol2_DNA", "Cls5_7.ipd.input"],
+               ["Oryzias_latipes_transposon_Tol2_DNA", "Cls5_8.ipd.input"],
+               ["Oryzias_latipes_transposon_Tol2_DNA", "Cls5_9.ipd.input"],
+               ["Oryzias_latipes_transposon_Tol2_DNA", "Cls5_10.ipd.input"],
+               ["Oryzias_latipes_transposon_Tol2_DNA", "Cls5_11.ipd.input"]
+    ],
+    "output" : "IPDS_Tol2_10_s.dat"
+}

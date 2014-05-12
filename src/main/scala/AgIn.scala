@@ -420,11 +420,11 @@ object AgIn {
             input match {
               case List(refname, ipd, score, cover) => {
                 val sequence = readSequenceAsString(fastapath, refname)
-                val bis = readWigAsArray(wigscrpath + score, wigcovpath + cover).filter(_.coverage > 5)
+                val bis = readWigAsArray(wigscrpath + score, wigcovpath + cover).filter(_.coverage > 0)
                 val ipds = readInputAsArray(ipdpath + ipd)
                 val cpgs = findAllCpG(sequence)
                 val gc = getGCrate(sequence)
-                val prfs: List[(Int, Profile)] = cpgs.map(i => (i, pointProf(ipds, i))).filter(_._2.mcv > 5)
+                val prfs: List[(Int, Profile)] = cpgs.map(i => (i, pointProf(ipds, i))).filter(_._2.mcv > 0)
 
                 // add 13/04/24
                 // val fcpgs = filterNewseq(cpgs.map(x=>(x,x)), refname).map(x=>x._1)

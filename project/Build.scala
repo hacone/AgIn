@@ -14,8 +14,8 @@ object ProjectBuild extends Build {
        ++ PackageTask.distSettings 
        ++ Seq(
        	  scalaVersion := "2.9.2",
-	  organization := "org.utgenome.sample",
-       	  version := "1.0-SNAPSHOT",
+	  organization := "ysuzuki.mlab",
+       	  version := "1.0",
        	  scalacOptions ++= Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
           javaOptions += "-Xmx8G",
     	  parallelExecution := true,
