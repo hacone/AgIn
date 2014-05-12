@@ -1,2 +1,3 @@
+Reference = sequence.fasta
 L = 50
-Gamma = -1.90
+Gamma = -1.80

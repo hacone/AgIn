@@ -26,5 +26,5 @@
                ["Oryzias_latipes_transposon_Tol2_DNA", "Cls5_10.ipd.input"],
                ["Oryzias_latipes_transposon_Tol2_DNA", "Cls5_11.ipd.input"]
     ],
-    "output" : "IPDS_Tol2_10_s.dat"
+    "output" : "IPDS_Tol2_"
 }
