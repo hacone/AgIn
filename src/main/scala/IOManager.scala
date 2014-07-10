@@ -9,8 +9,9 @@ import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.math._
 
-object IOManager {
-  // read .input file (generated from csv)
+
+object IOManager extends xerial.core.log.Logger {
+  // read .input file (generated from csv) // deprecated !
   def readInputAsArray(filename: String): Array[PacBioIPD] = {
     val buffer = ArrayBuffer.empty[PacBioIPD]
     val reader = new CSVReader(new FileReader(filename))
@@ -42,14 +43,93 @@ object IOManager {
     buffer.toArray
   }
 
+  // I want to use this like:  for ((refname, ipds) <- LoadIPDSets) blah blah ...
+  type TaggedIPD = (String, Array[PacBioIPD])
+  type IPDTuple = (Int, Long, Double, Int)
+  // TODO: rewrite once more
+  // TODO: should be rewritten using genuine iterator
+  // def loadIPD(filename: String): Stream[TaggedIPD] = {
+  import scala.collection.immutable.StreamIterator
+  def loadIPD(filename: String): StreamIterator[TaggedIPD] = {
+
+    def setupArray(linestr: Stream[List[String]]): Array[PacBioIPD] = {
+      val nullIPD = PacBioIPD(-1.0, 0, 0.0, -1.0, 0, 0.0)
+
+      // str are to be sorted as 10 10 10 ... 
+      // but PacBioIPD are const'ed as (data for 0, data for 1)
+      def takePair(linestr: Stream[List[String]]): (Long, PacBioIPD, Stream[List[String]])  = {
+        def parseOne(line: List[String]): IPDTuple = line match {
+          case _pos:: _str:: base:: score:: tMean:: tErr:: modelP:: _ipd:: _cov:: rest =>
+            (_str.toInt, _pos.toLong, _ipd.toDouble, _cov.toInt)
+          case _ => error("ill formed line parsing %s".format(filename)); (0,0,0.0,0)
+        }
+        val fst = parseOne(linestr.head)
+        if (linestr.tail.isEmpty) {
+          if (fst._1 == 0) (fst._2, PacBioIPD(fst._3, fst._4, 0.0, -1.0, 0, 0.0), linestr.tail)
+          else (fst._2, PacBioIPD(-1.0, 0, 0.0, fst._3, fst._4, 0.0), linestr.tail)
+        } else {
+          val snd = parseOne(linestr.tail.head)
+          if (fst._2 == snd._2) {
+            if (fst._1 == 0) (fst._2, PacBioIPD(fst._3, fst._4, 0.0, snd._3, snd._4, 0.0),
+                              linestr.tail.tail)
+            else (fst._2, PacBioIPD(snd._3, snd._4, 0.0, fst._3, fst._4, 0.0),
+                                    linestr.tail.tail)
+          } else {
+            if (fst._1 == 0) (fst._2, PacBioIPD(fst._3, fst._4, 0.0, -1.0, 0, 0.0), linestr.tail)
+            else (fst._2, PacBioIPD(-1.0, 0, 0.0, fst._3, fst._4, 0.0), linestr.tail)
+          }
+        }
+      }
+
+      val buffer = ArrayBuffer.empty[PacBioIPD]
+      @scala.annotation.tailrec
+      def recur(n: Long, str: Stream[List[String]]): Unit = {
+        if (str.isEmpty) return
+        else {
+          val (pos, ipd, next) = takePair(str)
+          val diff: Int = (pos - n).toInt
+          buffer ++= Array.fill(diff)(nullIPD)
+          buffer += ipd
+          recur(pos+1, next)
+        }
+      }
+
+      recur(0, linestr)
+      buffer.toArray
+    }
+
+    def body(linestr: Stream[List[String]]): Stream[TaggedIPD] = {
+      if (linestr.isEmpty) Stream.empty[TaggedIPD]
+      else {
+        val _refname = linestr.head.head
+        val refname = _refname.takeWhile(!_.isSpaceChar)
+
+        info("setup IPD array for %s".format(refname))
+
+        val (hd, tl) = linestr.span(_.head == _refname)
+
+        info("spaned...")
+        (refname, setupArray(hd.map(_.tail))) #:: body(tl)
+      }
+    }
+
+    val reader = new CSVReader(new FileReader(filename))
+    val ipdstr = body(
+      Stream.continually(reader.readNext)
+      .takeWhile(_ != null).map(_.toList).tail // chop header line
+    )
+
+    new scala.collection.immutable.StreamIterator(ipdstr)
+  }
+
   def readWigAsArray(fileScore: String, fileCover: String): Array[Bisulfite] = {
     val buffer = ArrayBuffer.empty[Bisulfite]
-    for (((_score, _cover), _index) <- Source.fromFile(fileScore).getLines.zip(Source.fromFile(fileCover).getLines).zipWithIndex) {
-      val score = _score.toDouble
-      val cover = _cover.toInt
-      val index = _index + 1 // zipWithIndex is 0-origined
-      if (score != -1) buffer += Bisulfite(index, score, cover)
-      // buffer += Bisulfite(index, score, cover)
+    for (((_score, _cover), _index) <- Source.fromFile(fileScore).getLines.zip(
+                                       Source.fromFile(fileCover).getLines)
+                                       .zipWithIndex) {
+      val (score, cover) = (_score.toDouble, _cover.toInt)
+      val index = _index + 1 // adjust, since zipWithIndex is 0-origin
+      if (score != -1.0) buffer += Bisulfite(index, score, cover)
     }
     buffer.toArray
   }
@@ -117,6 +197,7 @@ object IOManager {
   def readSequenceAsString(filename: String, refname: String): String = {
     // find index for refname from .fai file
     var refIndex = ("not found", 0, 0:Long, 0, 0)
+    info("look for fasta: " ++ filename)
     Source.fromFile(filename + ".fai").getLines.find(_.contains(refname)) match {
       case Some(l) =>
         l.split('\t').toList match {
@@ -145,5 +226,30 @@ object IOManager {
     }
 
     "N" ++ buffer.toString.take(refIndex._2) // sentinel at index 0
+  }
+
+  import AgIn.Tsegment
+  def writeGFF(outfile: String, refname: String, segments: List[Tsegment], command: String): Unit = {
+    val gff = new java.io.PrintWriter(outfile)
+
+    val AgInVersion = "0.9"
+
+    // write out header
+    gff.println("##gff-version 3")
+    gff.println("##date %tc".format(new java.util.Date()))
+    gff.println("##feature-ontology http://song.cvs.sourceforge.net/*checkout*/song/ontology/sofa.obo?revision=1.12")
+    gff.println("##source AgIn %s".format(AgInVersion)) // TODO: any other way to access this info ?
+    gff.println("##source-commandline %s".format(command))
+
+    for ((begin, end, avgscr, size) <- segments) {
+      val line = List(
+        refname, ".", "epigenetically_modified_region",
+        begin.toString, end.toString,
+        ".", ".", ".",
+        "type=hypomethylated_interval;avg_coverage=%f;avg_score=%f;nCpG=%d;".format(-1.0, avgscr, size)
+      ).mkString("\t")
+      gff.println(line)
+    }
+  gff.close
   }
 }

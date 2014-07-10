@@ -16,7 +16,25 @@ import hacone.AgIn.IOManager._
 
 object Profiling {
 
-  // when cannot decide, return false
+    // Make a IPD-profile around given position
+    def pointProf(ipds: Array[PacBioIPD], idx: Int): Profile = {
+      // if the position doesn't have enough neighborhood, generate zero-coverage profile
+      val ZeroProf = new Profile( (-10 to 10).toList.map { i => (i, 0.0, 0, 0.0, 0)} )
+
+      if (idx-10<=0 || idx+11>=ipds.length) return ZeroProf 
+
+      val _prof = (-10 to 10).toList.map { i =>
+        val (fi, ri) = (ipds(idx+i).fipd, ipds(idx+1-i).ripd)
+        val (fc, rc) = (ipds(idx+i).fcov, ipds(idx+1-i).rcov)
+        val (cover, mean) = (fc + rc, (fi * fc + ri * rc)/(fc + rc).toDouble)
+        // handle Infinity and winsorize
+        (i, mean, cover, 0.0, 2) 
+        // (i, math.min(mean, 10.0), cover, 0.0, 2) 
+      }
+      new Profile(_prof)
+    }
+
+  // when cannot decide, return false // TODO: not efficient
   def isCpG(sequence: String, pos: Int, isPlusStrand: Boolean): Boolean = {
     if (isPlusStrand) {
       if (pos <= 0 || sequence.length-1 <= pos) false
@@ -29,11 +47,45 @@ object Profiling {
 
   // find indices of all Cs of CpG in forward strand
   def findCpG(start: Int, end: Int, sequence: String): List[Int] = {
-    (for (i <- start until end; if isCpG(sequence, i, true)) yield i) toList
+    (start until end).toList.filter { i => isCpG(sequence, i, true) }
   }
 
-  def findAllCpG(sequence: String): List[Int] = {
-    (for (i <- 1 until sequence.length; if isCpG(sequence, i, true)) yield i) toList
+  def findAllCpG(sequence: String): List[Int] = findCpG(1, sequence.length, sequence)
+
+  type LIP = (List[Int], List[Int])
+  def partitionMethylationState(idxs: List[Int], bis: Array[Bisulfite]): LIP = {
+
+    // println(bis.take(20).map(_.score).mkString(" "))
+
+    // you can customize these
+
+    def isMethyl(b: Bisulfite) = b.score >= 0.5
+    def isUnMethyl(b: Bisulfite) = ! isMethyl(b)
+
+    /*
+    def isMethyl(b: Bisulfite) = b.score >= 0.8 
+    def isUnMethyl(b: Bisulfite) = b.score <= 0.2 && b.score > 0
+    */
+
+    val methyl = ListBuffer.empty[Int]
+    val unmethyl = ListBuffer.empty[Int]
+
+    // TODO: idea of recursion is OK, let's clean up using case LT, GT ...
+    @scala.annotation.tailrec
+    def loop(is: List[Int], bs: Array[Bisulfite]): Unit = {
+        if (is.isEmpty || bs.isEmpty) return
+        else if (is.head == bs.head.position) {
+          if (isMethyl(bs.head)) methyl += is.head
+          else if (isUnMethyl(bs.head)) unmethyl += is.head
+          loop(is.tail, bs.tail)
+        }
+        else if (is.head > bs.head.position) loop(is, bs.tail)
+        else if (is.head < bs.head.position) loop(is.tail, bs)
+    }
+
+    loop(idxs, bis)
+
+    (methyl.result, unmethyl.result)
   }
 
   // find indices of methylated Cs in forward strand

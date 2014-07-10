@@ -1,5 +1,7 @@
 package hacone.AgIn
 
+// TODO: this is messy, keep them close where they are used
+
 import au.com.bytecode.opencsv.CSVReader
 import java.io.FileReader
 import java.io.File
@@ -17,23 +19,18 @@ import Classifier._
 import hacone.AgIn.IOManager._
 import hacone.AgIn.Profiling._
 import hacone.AgIn.resources._
-import hacone.AgIn.PrintData._
 
 case class Bisulfite(position: Int, score: Double, coverage: Int)
-case class PacBioIPD(fipd: Double, fcov: Int, fvar: Double,
-                ripd: Double, rcov: Int, rvar: Double) // variation not yet impled
+case class PacBioIPD(fipd: Double, fcov: Int, fvar: Double, ripd: Double, rcov: Int, rvar: Double) // variation not yet used
 
-class AgIn {
-}
+object AgIn extends xerial.core.log.Logger {
 
-class Environment(val obj: AgIn, val refname: String, val ipds: Array[PacBioIPD],
-                  val bis: Array[Bisulfite], val sequence: String)
+  type Tsegment = (Int, Int, Double, Int) // begin, end, avg.score, size(#CpG)
 
-object AgIn {
   def main(args:Array[String]) {
     // here i place general settings used for every type of task
     // Some are set by convention, and others by configuration (config.dat file)
-    val configures = Source.fromFile("input/config.dat").getLines
+    val configures = Source.fromFile("./input/config.dat").getLines
                            .map(_.split('=').map(_.trim))
     val seglen = configures.find(_(0)=="L").getOrElse(Array("Default", "50"))(1).toInt
     val gamma = configures.find(_(0)=="Gamma").getOrElse(Array("Default", "-1.80"))(1).toDouble
@@ -43,31 +40,8 @@ object AgIn {
     val maxCoverage = configures.find(_(0)=="maxCoverage")
                         .getOrElse(Array("Default", "0"))(1).toInt
     val ipdpath = "./input/IPD/"
-    val wigcovpath = "./input/WIGCOV/"
-    val wigscrpath = "./input/WIGSCR/"
-
-    val obj = new AgIn
-
-    // Make a IPD-profile around given position
-    def pointProf(ipds: Array[PacBioIPD], idx: Int): Profile = {
-      // if the position doesn't have enough neighborhood, generate zero-coverage profile
-      if (idx-10<=0 || idx+11>=ipds.length) {
-        return new Profile({for (i<- -10 to 10) yield {(i,0.0,0,0.0,0)}}.toList)
-      }
-
-      val _prof = {for (i <- -10 to 10) yield {
-        val (fi, ri) = (ipds(idx+i).fipd, ipds(idx+1-i).ripd)
-        val (fc, rc) = if (maxCoverage > 0) {
-          (math.min(maxCoverage, ipds(idx+i).fcov), math.min(maxCoverage, ipds(idx+1-i).rcov))
-        } else {
-          (ipds(idx+i).fcov, ipds(idx+1-i).rcov)
-        }
-        val (cover, mean) = (fc + rc, (fi * fc + ri * rc)/(fc + rc).toDouble)
-        // handle Infinity and winsorize
-        if (mean < 10.0) (i, mean, cover, 0.0, 2) else (i, 10.0, cover, 0.0, 2)
-      }}
-      new Profile(_prof.toList)
-    }
+    val wigcovpath = "./input/wigcov/"
+    val wigscrpath = "./input/wigscr/"
 
     // calculate ita scores for each position from IPD profile, effective coverage, and Beta vector
     def prfstoIta(prfs: List[(Int, Profile)]): List[Double] = {
@@ -158,6 +132,7 @@ object AgIn {
     }
 
     // (position, score, class)
+    // TODO: rewrite
     def segmentSegments(seg: List[(Int, Double, Int)]): List[List[(Int, Double, Int)]] = {
       val b = scala.collection.mutable.ListBuffer.empty[List[(Int, Double, Int)]]
       var now = seg.head._3
@@ -193,33 +168,20 @@ object AgIn {
       b.result
     }
 
-    // return: begin, end, score, gap (-1) ratio
-    def findFilledHypo(segs: List[List[(Int, Double, Int)]], bis: Array[Bisulfite]): List[(Int, Int, Double, Double)] = {
-      var i = 1
-      return {for ((seg, score) <- segs.zip(scoreSegments(segs, ((a:Double) => a)))) yield {
-        var read = 0
-        for (s <- seg) {
-          while (bis(i).position < s._1 && i < bis.length-1) { i += 1 }
-          if (bis(i).position == s._1) { if (bis(i).score >= 0) { read += 1 } }
-        }
-        (score._1, score._2, score._3, 1.0 - (read.toDouble/seg.length))
-      }}.toList
-    }
-
-
     // start of main: declaring handler of each task specified by task/**.json
-    // TODO: it may be better to separate these task-specific functions. definitively...
+    // TODO: it may be better to separate these task-specific functions. definitely...
 
     // write out IPDR profile and bisulfite score of each CpG site for estimation of a vector beta
     def extractProfile(protocol: Map[String, Any]): Unit = {
+      /*
       (protocol("input"), protocol("output")) match {
         case (inputList: List[List[String]], outfile: String) => {
           for (input <- inputList) {
             input match {
               case List(refname, ipd, score, cover) => {
+                println(refname)
                 val sequence = readSequenceAsString(fastapath, refname)
                 val bis = readWigAsArray(wigscrpath + score, wigcovpath + cover)
-                // val bis = readWigWithConv(wigscrpath + score, wigcovpath + cover, refname)
                 val ipds = readInputAsArray(ipdpath + ipd)
                 val cpgs = findAllCpG(sequence)
 
@@ -228,9 +190,9 @@ object AgIn {
                   (i, pointProf(ipds, i))
                 }}.toList
                 println("writing profiles on %s to %s".format(refname, outfile))
-            // TODO: I forgot where it is defined. let me check.
-            // TODO: Anyway, don't rely this task. Use rather standard LDA vector supplied somewhere.
-                printProfVsBis(prfs, bis, outfile) 
+
+                // TODO: Anyway, don't rely this task. Use rather standard LDA vector supplied somewhere.
+                hacone.AgIn.PrintData.printProfVsBis(prfs, bis, outfile)
               }
               case _ => println("invalid input file list: %s".format(input)) 
             }
@@ -238,9 +200,11 @@ object AgIn {
         }
         case _ => println("missing or invalid input(output) field"); sys.exit
       }
+      */
     }
 
     def trainBeta(protocol: Map[String, Any]): Unit = {
+      /*
       (protocol("input"), protocol("output")) match {
         case (inputList: List[List[String]], outfile: String) => {
           for (input <- inputList) {
@@ -286,9 +250,11 @@ object AgIn {
         }
         case _ => println("missing or invalid input(output) field"); sys.exit
       }
+      */
     }
 
     def pointwisePrediction(protocol: Map[String, Any]): Unit = {
+      /*
       (protocol("input"), protocol("output")) match {
         case (inputList: List[List[String]], outfile: String) => {
           for (input <- inputList) {
@@ -333,6 +299,7 @@ object AgIn {
         }
         case _ => println("missing or invalid input(output) field"); sys.exit
       }
+      */
     }
     
     def getGCrate(sequence: String): List[(Int, Double)] = {
@@ -639,7 +606,8 @@ object AgIn {
     }
 
     def predictOnRealCase(protocol: Map[String, Any]): Unit = {
-      println("gamma = %f".format(gamma))
+      /*
+      info("gamma = %f".format(gamma))
       (protocol("input"), protocol("output")) match {
         case (inputList: List[List[String]], outfile: String) => {
           inputList.map { input: List[String] =>
@@ -655,9 +623,9 @@ object AgIn {
                         .format(sequence.length, ipds.length, cpgs.length))
 
                 val prfs: List[(Int, Profile)] = cpgs.map(i => (i, pointProf(ipds, i))).filter(_._2.mcv > 0)
-                val ita = prfstoIta(prfs)
+                val ita = prfstoIta(prfs) // use your beta (task parameter ?)
 
-                val optseg = callSegmentationIta(prfs, gamma, ita) // use your beta (task parameter ?)
+                val optseg = callSegmentationIta(prfs, gamma, ita) 
                 val scores = if (optseg.nonEmpty) {
                   val ss = segmentSegments(optseg)
                   scoreSegments(ss, ((a:Double) => a))
@@ -677,6 +645,8 @@ object AgIn {
                   scrfile.println("%d %d %f %d".format(a, b, c, s))
                 }
                 scrfile.close
+                IOManager.writeGFF(outfile+".gff", refname, scores,
+                  "-Some -commands -which -invoked -me")
               }
             case _ => println("invalid input file list: %s".format(input)) 
           }
@@ -684,26 +654,64 @@ object AgIn {
         }
         case _ => println("missing or invalid input(output) field"); sys.exit
       }
+      */
     }
 
-    // parsing protocol file in json format and execute a task
-    JSON.parseFull(Source.fromFile("task/%s.json".format(args(0))).getLines.foldLeft("")(_+"\n"+_)) match {
-      case Some(p) => {
-        val protocol = p.asInstanceOf[Map[String, Any]]
-        protocol("task") match {
-          case "extract-profile" => extractProfile(protocol)
-          case "train-beta0" => trainBeta(protocol)
-          case "pointwise-prediction" => pointwisePrediction(protocol)
-          case "testOnUnseen" => testOnUnseen(protocol)
-          case "predictOnRealCase" => predictOnRealCase(protocol)
-          case "reportCoverage" => reportCoverage(protocol)
-          case _ => println("unknown task")
-        }
-        println("task done")
+    def parseOpt(opts: List[String]): Map[String, String] = opts match {
+      case ("-h" :: rest) => Map("help" -> "True")
+      case ("--legacy" :: jsonpath :: rest) => Map("legacy" -> jsonpath)
+
+      case ("-i" :: infile :: rest) => Map("inputFile" -> infile) ++ parseOpt(rest)
+      case ("-o" :: outfile :: rest) => Map("outputFile" -> outfile) ++ parseOpt(rest)
+      case ("-f" :: fasta :: rest) => Map("fastaFile" -> fasta) ++ parseOpt(rest)
+      case ("-w" :: wigdir :: rest) => Map("wigDir" -> wigdir) ++ parseOpt(rest)
+
+      case ("-l" :: min_length :: rest) => Map("min_length" -> min_length) ++ parseOpt(rest)
+      case ("-g" :: gamma :: rest) => Map("gamma" -> gamma) ++ parseOpt(rest)
+
+      // case ("-w" :: infile :: rest) => Map("wigdir" -> infile) ++ parseOpt(rest)
+      case (command :: Nil) => Map("command" -> command)
+      case _ => {
+        error("ERROR: parseOpt: ill-formed arguments")
+        Map("help" -> "True")
       }
-      case _ => println("json parse error")
     }
 
-    sys.exit
+    // of course, deprecated
+    def legacyJob(jsonpath: String): Unit = {
+      JSON.parseFull(Source.fromFile("task/%s.json".format(jsonpath)).getLines.foldLeft("")(_+"\n"+_)) match {
+        case Some(p) => {
+          val protocol = p.asInstanceOf[Map[String, Any]]
+          protocol("task") match {
+            case "extract-profile" => extractProfile(protocol)
+            case "train-beta0" => trainBeta(protocol)
+            case "pointwise-prediction" => pointwisePrediction(protocol)
+            case "testOnUnseen" => testOnUnseen(protocol)
+            case "predictOnRealCase" => predictOnRealCase(protocol)
+            case "reportCoverage" => reportCoverage(protocol)
+            case _ => println("unknown task")
+          }
+          println("task done")
+        }
+        case _ => println("json parse error")
+      }
+    }
+
+    // TODO: Use Monadic pattern
+    val opts = parseOpt(args.toList) + ("Full-Commands" -> args.mkString(" "))
+    opts.get("legacy") match {
+    case Some(path) => legacyJob(path)
+
+    case None =>  opts.get("help") match {
+    case Some(_) => Tasks.printHelp()
+
+    case None => opts.get("command") match {
+    case Some(command) => command match {
+      case "profile" => Tasks.profile(opts)
+      case "predict" => Tasks.predict(opts)
+      case _ => error("unknown command: %s".format(command))
+      }
+    case None => error("missing command")
+    }}}
   }
 }
