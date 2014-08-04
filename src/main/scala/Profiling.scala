@@ -16,6 +16,7 @@ import hacone.AgIn.IOManager._
 
 object Profiling {
 
+    // deprecated, only for compatibility check.
     // Make a IPD-profile around given position
     def pointProf(ipds: Array[PacBioIPD], idx: Int): Profile = {
       // if the position doesn't have enough neighborhood, generate zero-coverage profile
@@ -27,11 +28,36 @@ object Profiling {
         val (fi, ri) = (ipds(idx+i).fipd, ipds(idx+1-i).ripd)
         val (fc, rc) = (ipds(idx+i).fcov, ipds(idx+1-i).rcov)
         val (cover, mean) = (fc + rc, (fi * fc + ri * rc)/(fc + rc).toDouble)
-        // handle Infinity and winsorize
-        (i, mean, cover, 0.0, 2) 
-        // (i, math.min(mean, 10.0), cover, 0.0, 2) 
+        // handle NaN and (positive-)Infinity and winsorize
+        if (mean.isNaN) (i, 0.0, 0, 0.0, 0) else (i, math.min(mean, 10.0), cover, 0.0, 2)
       }
       new Profile(_prof)
+    }
+
+    // Iterator version.
+    // Make a IPD-profile around given position
+    def makeProfile(ipds: ArrayIterator[PacBioIPD], idx: Int): Option[Profile] = {
+      val _prof = for (i <- -10 to 10) yield {
+
+        val (fi, fc) = if (0<=idx+i) {
+          ipds(idx+i) match {
+            case Some(ipd) => (ipd.fipd, ipd.fcov)
+            // case None => { (0.0, 0); return None } // TODO: which is better ?
+            case None =>  (0.0, 0) // TODO: for compatibility, this need to be like this
+          }
+        } else (0.0, 0)
+
+        val (ri, rc) = if (0<=idx+1-i) {
+          ipds(idx+1-i) match {
+            case Some(ipd) => (ipd.ripd, ipd.rcov)
+            case None =>  (0.0, 0)
+          }
+        } else (0.0, 0)
+
+        val (cover, mean) = (fc + rc, (fi * fc + ri * rc)/(fc + rc).toDouble)
+        if (mean.isNaN) (i, 0.0, 0, 0.0, 0) else (i, math.min(mean, 10.0), cover, 0.0, 2)
+      }
+      new Some(Profile(_prof.toList))
     }
 
   // when cannot decide, return false // TODO: not efficient

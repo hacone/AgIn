@@ -7,6 +7,8 @@ object OptInterval {
   def apply[T](data: List[T], scoreFun: List[T=>Double], minLength: List[Int]): List[Int] = {
     require(scoreFun.length == minLength.length,
             "scoreFun and minLength must have same length")
+    if (data.isEmpty) return List.empty[Int]
+
     val numClass = scoreFun.length
     val cumulative = Array.ofDim[Double](data.length+1, numClass)
     val maxScore = Array.ofDim[Double](data.length+1, numClass)

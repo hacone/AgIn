@@ -37,38 +37,150 @@ object IOManager extends xerial.core.log.Logger {
             buffer += PacBioIPD(last._3, last._4, 0.0, ipd, cov, 0.0)
           }
           last = (str, pos, ipd, cov)
-        case _ => ()
+        case _ => info("ill formed line: %s".format(line))
       }
     }
+    // buffer.take(10000).foreach(x => println("%.2f %3d: %.2f %3d".format(x.fipd, x.fcov, x.ripd, x.rcov)))
     buffer.toArray
   }
 
   // I want to use this like:  for ((refname, ipds) <- LoadIPDSets) blah blah ...
-  type TaggedIPD = (String, Array[PacBioIPD])
+  type TaggedIPD = (String, ArrayIterator[PacBioIPD])
   type IPDTuple = (Int, Long, Double, Int)
-  // TODO: rewrite once more
-  // TODO: should be rewritten using genuine iterator
-  // def loadIPD(filename: String): Stream[TaggedIPD] = {
-  import scala.collection.immutable.StreamIterator
-  def loadIPD(filename: String): StreamIterator[TaggedIPD] = {
 
-    def setupArray(linestr: Stream[List[String]]): Array[PacBioIPD] = {
+  case class ArrayIterator[T: reflect.ClassTag](val it: Iterator[T], val size: Int) {
+    var hasNext = true
+    var idx = 0 // next index of array to load into
+    val arr = new Array[T](size)
+
+    def apply(n: Int): Option[T] = {
+      if (!(-1 < n && idx-size <= n)) {
+        error("idx: %d size: %d n: %d".format(idx, size, n))
+        assert(-1 < n && idx-size <= n)
+      }
+      while (n >= idx && it.hasNext) {
+        arr(idx%size) = it.next()
+        idx += 1
+      }
+      if (n < idx) {
+        Some(arr(n%size))
+      } else {
+        hasNext = false
+        None
+      }
+    }
+  }
+
+  // TODO (solved?): Exhaust remaining element in the Iterator
+  class GroupIterator[T](it: Iterator[T], p: (T, T) => Boolean) extends Iterator[Iterator[T]] {
+    val bit = it.buffered
+    var last: Option[T] = None
+    var first = true
+
+    def hasNext(): Boolean =  bit.hasNext
+    def next(): Iterator[T] = {
+      // exhaust remaining element
+      if (!first) {
+      while (bit.hasNext && 
+             { last match {
+                 case Some(l) => p(l, bit.head)
+                 case None => true
+      }}) { last = Some(bit.next()) }
+      } else { first = false }
+
+      class Itr extends Iterator[T] {
+        var _hasNext = true
+        def hasNext(): Boolean = _hasNext
+        def next(): T = {
+          val ret = bit.next()
+          _hasNext = if (bit.hasNext) p(ret, bit.head) else false
+          ret
+        }
+      }
+
+      last = None
+      if (bit.hasNext) new Itr else Iterator.empty
+    }
+  }
+
+  // case class loadIPD(val filename: String) extends Iterator[TaggedIPD] {
+  def loadIPD(filename: String): Iterator[TaggedIPD] = {
+
+    type NameIPD = (String, IPDTuple)
+    def parseOne(line: List[String]): NameIPD = line match {
+      case rname::_pos:: _str:: base:: score:: tMean:: tErr:: modelP:: _ipd:: _cov:: rest =>
+        (rname, (_str.toInt, _pos.toLong, _ipd.toDouble, _cov.toInt))
+      case _ => error("ill formed line parsing \"%s\" in %s".format(line, filename)); ("error", (0,0,0.0,0))
+    }
+
+    val reader = new CSVReader(new FileReader(filename))
+    val it = {
+      val _it = Iterator.continually(reader.readNext).takeWhile(_ != null)
+      _it.next() // skip the header line that can't be parsed
+      _it.map(x => parseOne(x.toList)).buffered
+    }
+
+    for (_itForChr <- new GroupIterator(it, (a: NameIPD, b: NameIPD) => a._1 == b._1); itForChr = _itForChr.buffered) yield {
+      val ni = itForChr.head._2
+      info("next head: %d %d %.3f %d".format(ni._1, ni._2, ni._3, ni._4))
+      (itForChr.head._1.takeWhile(!_.isWhitespace), setupArrIt(itForChr.map(_._2)))
+    }
+
+  }
+
+    def setupArrIt(line: Iterator[IPDTuple]): ArrayIterator[PacBioIPD] = {
+      class IPDIterator(it: Iterator[IPDTuple]) extends Iterator[PacBioIPD] {
+        val nullIPD = PacBioIPD(-1.0, 0, 0.0, -1.0, 0, 0.0)
+        var idx = 0 // next required position
+        // var (buf1, buf2) = (nullIPD, nullIPD)
+        var bufa: IPDTuple = (0,0,0.0,0)
+        var bufb: IPDTuple = (0,0,0.0,0)
+
+        var _hasNext = true
+        def hasNext() = _hasNext
+
+        def next(): PacBioIPD = {
+          if (idx < bufa._2) {
+            idx += 1
+            nullIPD
+          } else if (idx == bufa._2 && idx == bufb._2) {
+            val ret = PacBioIPD(bufb._3, bufb._4, 0.0, bufa._3, bufa._4, 0.0)
+            if (it.hasNext) bufa = it.next() else _hasNext = false
+            if (it.hasNext) bufb = it.next() else bufb = (-1, -1, 0.0, 0)
+            idx += 1
+            ret
+          } else if (idx == bufa._2) {
+            val ret = if (bufa._1 == 0) {
+              PacBioIPD(bufa._3, bufa._4, -1.0, 0, 0, 0.0)
+            } else {
+              PacBioIPD(-1.0, 0, 0.0, bufa._3, bufa._4, 0.0)
+            }
+            bufa = bufb
+            if (bufa._1 == -1) _hasNext = false
+            else if (it.hasNext) bufb = it.next()
+            else bufb = (-1, -1, 0.0, 0)
+            idx += 1
+            ret
+          } else throw new Exception("This could not happen")
+        }
+      }
+      val result = new ArrayIterator(new IPDIterator(line), 100)
+      result
+    }
+
+    // deprecated
+    def setupArray(linestr: List[IPDTuple]): Array[PacBioIPD] = {
       val nullIPD = PacBioIPD(-1.0, 0, 0.0, -1.0, 0, 0.0)
 
       // str are to be sorted as 10 10 10 ... 
       // but PacBioIPD are const'ed as (data for 0, data for 1)
-      def takePair(linestr: Stream[List[String]]): (Long, PacBioIPD, Stream[List[String]])  = {
-        def parseOne(line: List[String]): IPDTuple = line match {
-          case _pos:: _str:: base:: score:: tMean:: tErr:: modelP:: _ipd:: _cov:: rest =>
-            (_str.toInt, _pos.toLong, _ipd.toDouble, _cov.toInt)
-          case _ => error("ill formed line parsing %s".format(filename)); (0,0,0.0,0)
-        }
-        val fst = parseOne(linestr.head)
+      def takePair(linestr: List[IPDTuple]): (Long, PacBioIPD, List[IPDTuple])  = {
+        val fst = linestr.head
         if (linestr.tail.isEmpty) {
           if (fst._1 == 0) (fst._2, PacBioIPD(fst._3, fst._4, 0.0, -1.0, 0, 0.0), linestr.tail)
           else (fst._2, PacBioIPD(-1.0, 0, 0.0, fst._3, fst._4, 0.0), linestr.tail)
         } else {
-          val snd = parseOne(linestr.tail.head)
+          val snd = linestr.tail.head
           if (fst._2 == snd._2) {
             if (fst._1 == 0) (fst._2, PacBioIPD(fst._3, fst._4, 0.0, snd._3, snd._4, 0.0),
                               linestr.tail.tail)
@@ -83,7 +195,7 @@ object IOManager extends xerial.core.log.Logger {
 
       val buffer = ArrayBuffer.empty[PacBioIPD]
       @scala.annotation.tailrec
-      def recur(n: Long, str: Stream[List[String]]): Unit = {
+      def recur(n: Long, str: List[IPDTuple]): Unit = {
         if (str.isEmpty) return
         else {
           val (pos, ipd, next) = takePair(str)
@@ -98,29 +210,6 @@ object IOManager extends xerial.core.log.Logger {
       buffer.toArray
     }
 
-    def body(linestr: Stream[List[String]]): Stream[TaggedIPD] = {
-      if (linestr.isEmpty) Stream.empty[TaggedIPD]
-      else {
-        val _refname = linestr.head.head
-        val refname = _refname.takeWhile(!_.isSpaceChar)
-
-        info("setup IPD array for %s".format(refname))
-
-        val (hd, tl) = linestr.span(_.head == _refname)
-
-        info("spaned...")
-        (refname, setupArray(hd.map(_.tail))) #:: body(tl)
-      }
-    }
-
-    val reader = new CSVReader(new FileReader(filename))
-    val ipdstr = body(
-      Stream.continually(reader.readNext)
-      .takeWhile(_ != null).map(_.toList).tail // chop header line
-    )
-
-    new scala.collection.immutable.StreamIterator(ipdstr)
-  }
 
   def readWigAsArray(fileScore: String, fileCover: String): Array[Bisulfite] = {
     val buffer = ArrayBuffer.empty[Bisulfite]
@@ -225,13 +314,14 @@ object IOManager extends xerial.core.log.Logger {
       buffer ++= new String(rbuf.take(refIndex._4))
     }
 
+    fasta.close
+
     "N" ++ buffer.toString.take(refIndex._2) // sentinel at index 0
   }
 
   import AgIn.Tsegment
-  def writeGFF(outfile: String, refname: String, segments: List[Tsegment], command: String): Unit = {
-    val gff = new java.io.PrintWriter(outfile)
-
+  def writeHeaderToGFF(outfile: String, command: String): Unit = {
+    val gff = new java.io.PrintWriter(new java.io.FileWriter(outfile+".gff", false))
     val AgInVersion = "0.9"
 
     // write out header
@@ -240,16 +330,44 @@ object IOManager extends xerial.core.log.Logger {
     gff.println("##feature-ontology http://song.cvs.sourceforge.net/*checkout*/song/ontology/sofa.obo?revision=1.12")
     gff.println("##source AgIn %s".format(AgInVersion)) // TODO: any other way to access this info ?
     gff.println("##source-commandline %s".format(command))
+    gff.close
+  }
 
-    for ((begin, end, avgscr, size) <- segments) {
+  def writeRegionsToGFF(outfile: String, refname: String, segments: List[Tsegment]): Unit = {
+    val gff = new java.io.PrintWriter(new java.io.FileWriter(outfile+".gff", true))
+
+    for {
+      (begin, end, avgscr, size) <- segments
+      if avgscr < 0
+    } {
       val line = List(
         refname, ".", "epigenetically_modified_region",
         begin.toString, end.toString,
         ".", ".", ".",
-        "type=hypomethylated_interval;avg_coverage=%f;avg_score=%f;nCpG=%d;".format(-1.0, avgscr, size)
+        // "type=hypomethylated_interval;avg_coverage=%f;avg_score=%f;nCpG=%d;".format(-1.0, avgscr, size)
+        "type=hypomethylated_interval;avg_score=%.4f;nCpG=%d;".format(avgscr, size)
       ).mkString("\t")
       gff.println(line)
     }
-  gff.close
+    gff.close
+  }
+
+  // TODO: abstract them
+  def writeCoverageToWig(outfile: String, refname: String,
+                         ita: List[(Int, Double, Double)]): Unit = {
+    val wig = new java.io.PrintWriter(new java.io.FileWriter(outfile+"_coverage.wig", true))
+    wig.println("variableStep chrom=%s".format(refname))
+    for ((idx, _, c) <- ita) {
+      wig.println("%d %.2f".format(idx, c))
+    }
+    wig.close
+  }
+
+  def writeClassToWig(outfile: String, refname: String,
+                         segment: List[(Int, Double, Int)]): Unit = {
+    val wig = new java.io.PrintWriter(new java.io.FileWriter(outfile+"_class.wig", true))
+    wig.println("variableStep chrom=%s".format(refname))
+    for ((idx, _, c) <- segment) wig.println("%d %d".format(idx, c))
+    wig.close
   }
 }

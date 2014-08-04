@@ -37,13 +37,13 @@ object AgIn extends xerial.core.log.Logger {
     val fastapath = "./input/" + configures.find(_(0)=="Reference")
                                  .getOrElse(Array("Default", "GenRef.fasta"))(1)
     val vn = Resources.veclda
-    val maxCoverage = configures.find(_(0)=="maxCoverage")
-                        .getOrElse(Array("Default", "0"))(1).toInt
+
     val ipdpath = "./input/IPD/"
     val wigcovpath = "./input/wigcov/"
     val wigscrpath = "./input/wigscr/"
 
     // calculate ita scores for each position from IPD profile, effective coverage, and Beta vector
+    // TODO: short cut intermemiate result
     def prfstoIta(prfs: List[(Int, Profile)]): List[Double] = {
       def weightedProd(v: List[Double], u: List[Double], w: List[Double]): Double = {
         v.zip(u).zip(w).foldLeft(0.0)((s,t) => s + t._2*t._1._1*t._1._2)
@@ -62,6 +62,7 @@ object AgIn extends xerial.core.log.Logger {
         i + 2 * p._2.mcv * ic
       }
       val optipdseg = OptInterval.OptInterval(score.toList, List(fum, fm), List(seglen,seglen))
+      println("obtained optipdseg")
 
       return {for ((((a,x),b),c) <- prfs.zip(score).zip(optipdseg)) yield {
         (a, b, c) // position, score, class
@@ -606,7 +607,6 @@ object AgIn extends xerial.core.log.Logger {
     }
 
     def predictOnRealCase(protocol: Map[String, Any]): Unit = {
-      /*
       info("gamma = %f".format(gamma))
       (protocol("input"), protocol("output")) match {
         case (inputList: List[List[String]], outfile: String) => {
@@ -624,8 +624,10 @@ object AgIn extends xerial.core.log.Logger {
 
                 val prfs: List[(Int, Profile)] = cpgs.map(i => (i, pointProf(ipds, i))).filter(_._2.mcv > 0)
                 val ita = prfstoIta(prfs) // use your beta (task parameter ?)
+                
+                println("len of ita = %d".format(ita.size))
 
-                val optseg = callSegmentationIta(prfs, gamma, ita) 
+                val optseg = callSegmentationIta(prfs, gamma, ita)
                 val scores = if (optseg.nonEmpty) {
                   val ss = segmentSegments(optseg)
                   scoreSegments(ss, ((a:Double) => a))
@@ -645,8 +647,9 @@ object AgIn extends xerial.core.log.Logger {
                   scrfile.println("%d %d %f %d".format(a, b, c, s))
                 }
                 scrfile.close
-                IOManager.writeGFF(outfile+".gff", refname, scores,
-                  "-Some -commands -which -invoked -me")
+
+                IOManager.writeRegionsToGFF(outfile, refname, scores)
+                IOManager.writeClassToWig(outfile, refname, optseg)
               }
             case _ => println("invalid input file list: %s".format(input)) 
           }
@@ -654,7 +657,6 @@ object AgIn extends xerial.core.log.Logger {
         }
         case _ => println("missing or invalid input(output) field"); sys.exit
       }
-      */
     }
 
     def parseOpt(opts: List[String]): Map[String, String] = opts match {
@@ -664,9 +666,12 @@ object AgIn extends xerial.core.log.Logger {
       case ("-i" :: infile :: rest) => Map("inputFile" -> infile) ++ parseOpt(rest)
       case ("-o" :: outfile :: rest) => Map("outputFile" -> outfile) ++ parseOpt(rest)
       case ("-f" :: fasta :: rest) => Map("fastaFile" -> fasta) ++ parseOpt(rest)
+
       case ("-w" :: wigdir :: rest) => Map("wigDir" -> wigdir) ++ parseOpt(rest)
+      case ("--bed" :: bedfile :: rest) => Map("bedFile" -> bedfile) ++ parseOpt(rest)
 
       case ("-l" :: min_length :: rest) => Map("min_length" -> min_length) ++ parseOpt(rest)
+      case ("-b" :: beta :: rest) => Map("beta" -> beta) ++ parseOpt(rest)
       case ("-g" :: gamma :: rest) => Map("gamma" -> gamma) ++ parseOpt(rest)
 
       // case ("-w" :: infile :: rest) => Map("wigdir" -> infile) ++ parseOpt(rest)
@@ -697,6 +702,7 @@ object AgIn extends xerial.core.log.Logger {
       }
     }
 
+    // true entry point
     // TODO: Use Monadic pattern
     val opts = parseOpt(args.toList) + ("Full-Commands" -> args.mkString(" "))
     opts.get("legacy") match {
@@ -709,6 +715,7 @@ object AgIn extends xerial.core.log.Logger {
     case Some(command) => command match {
       case "profile" => Tasks.profile(opts)
       case "predict" => Tasks.predict(opts)
+      case "makeROC" => Tasks.makeROC(opts)
       case _ => error("unknown command: %s".format(command))
       }
     case None => error("missing command")
