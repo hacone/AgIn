@@ -6,21 +6,21 @@
 ##Analyse your data
 You need a `modification.csv` file, which is produced by `P_ModificationDetection` module of SMRT Pipe.
 Then run as:
+
     $ target/dist/bin/launch -i path/to/modifications.csv -f path/to/reference.fasta -o output_prefix -g gamma -l min_length predict
+
 Then you will obtain three output files:
+
     output_prefix.gff
     output_prefix_class.wig
     output_prefix_coverage.wig
+
 Please make sure the index file for the specified fasta file be placed in the same directory as fasta.
 
 
 ####The parameters
 If you want to change the parameters for prediction, supply them in the command-line options;
-By you specifying
-
-    -l 100
-    -g -1.70
-
+By you specifying `-l 100 -g -1.70`, 
 then  AgIn uses `100` as minimum number of CpG sites the predicted regions must contain,
 and `-1.70` as decision threshold for prediction.
 
