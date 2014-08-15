@@ -1,0 +1,14 @@
+[0m[[0minfo[0m] [0mRunning hacone.AgIn.AgIn -i ./input/scaffold200.csv -o 730_scaf200 -g -1.8 -l 50 -f input/Reference/medakaAssembly_version1_0_fasta.fasta predict[0m
+[0m[[0mdebug[0m] [0mStarting sandboxed run...[0m
+[0m[[0mdebug[0m] [0mWaiting for threads to exit or System.exit to be called.[0m
+[0m[[0mdebug[0m] [0m  Classpath:[0m
+[0m[[0mdebug[0m] [0m	/home/hacone/src/AgIn/target/classes[0m
+[0m[[0mdebug[0m] [0m	/home/hacone/.sbt/boot/scala-2.10.4/lib/scala-library.jar[0m
+[0m[[0mdebug[0m] [0m	/home/hacone/.ivy2/cache/org.codehaus.plexus/plexus-classworlds/jars/plexus-classworlds-2.4.jar[0m
+[0m[[0mdebug[0m] [0m	/home/hacone/.ivy2/cache/net.sf.opencsv/opencsv/jars/opencsv-2.3.jar[0m
+[0m[[0mdebug[0m] [0m	/home/hacone/.ivy2/cache/org.xerial/xerial-core/jars/xerial-core-3.2.2.jar[0m
+[0m[[0mdebug[0m] [0mWaiting for thread run-main to exit[0m
+[0m[[0mdebug[0m] [0m	Thread run-main exited.[0m
+[0m[[0mdebug[0m] [0mInterrupting remaining threads (should be all daemons).[0m
+[0m[[0mdebug[0m] [0mSandboxed run complete..[0m
+[0m[[0mdebug[0m] [0mExited with code 0[0m

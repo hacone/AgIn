@@ -1,0 +1,29 @@
+[0m[[0minfo[0m] [0mGenerating API documentation for main sources...[0m
+[0m[[0mdebug[0m] [0mCalling Scaladoc with arguments:[0m
+[0m[[0mdebug[0m] [0m	-encoding[0m
+[0m[[0mdebug[0m] [0m	UTF-8[0m
+[0m[[0mdebug[0m] [0m	-deprecation[0m
+[0m[[0mdebug[0m] [0m	-unchecked[0m
+[0m[[0mdebug[0m] [0m	-d[0m
+[0m[[0mdebug[0m] [0m	/home/hacone/src/AgIn/target/api[0m
+[0m[[0mdebug[0m] [0m	-bootclasspath[0m
+[0m[[0mdebug[0m] [0m	/usr/lib/jvm/java-6-openjdk-i386/jre/lib/resources.jar:/usr/lib/jvm/java-6-openjdk-i386/jre/lib/rt.jar:/usr/lib/jvm/java-6-openjdk-i386/jre/lib/sunrsasign.jar:/usr/lib/jvm/java-6-openjdk-i386/jre/lib/jsse.jar:/usr/lib/jvm/java-6-openjdk-i386/jre/lib/jce.jar:/usr/lib/jvm/java-6-openjdk-i386/jre/lib/charsets.jar:/usr/lib/jvm/java-6-openjdk-i386/jre/lib/jfr.jar:/usr/lib/jvm/java-6-openjdk-i386/jre/lib/netx.jar:/usr/lib/jvm/java-6-openjdk-i386/jre/lib/plugin.jar:/usr/lib/jvm/java-6-openjdk-i386/jre/lib/rhino.jar:/usr/lib/jvm/java-6-openjdk-i386/jre/classes:/home/hacone/.sbt/boot/scala-2.10.4/lib/scala-library.jar[0m
+[0m[[0mdebug[0m] [0m	-classpath[0m
+[0m[[0mdebug[0m] [0m	/home/hacone/.ivy2/cache/org.codehaus.plexus/plexus-classworlds/jars/plexus-classworlds-2.4.jar:/home/hacone/.ivy2/cache/net.sf.opencsv/opencsv/jars/opencsv-2.3.jar:/home/hacone/.ivy2/cache/org.xerial/xerial-core/jars/xerial-core-3.2.2.jar[0m
+[0m[[0mdebug[0m] [0m	/home/hacone/src/AgIn/src/main/scala/AgIn.scala[0m
+[0m[[0mdebug[0m] [0m	/home/hacone/src/AgIn/src/main/scala/Classifier.scala[0m
+[0m[[0mdebug[0m] [0m	/home/hacone/src/AgIn/src/main/scala/GridSearcher.scala[0m
+[0m[[0mdebug[0m] [0m	/home/hacone/src/AgIn/src/main/scala/IOManager.scala[0m
+[0m[[0mdebug[0m] [0m	/home/hacone/src/AgIn/src/main/scala/OptInterval.scala[0m
+[0m[[0mdebug[0m] [0m	/home/hacone/src/AgIn/src/main/scala/PrintData.scala[0m
+[0m[[0mdebug[0m] [0m	/home/hacone/src/AgIn/src/main/scala/Profiling.scala[0m
+[0m[[0mdebug[0m] [0m	/home/hacone/src/AgIn/src/main/scala/Tasks.scala[0m
+[0m[[0mdebug[0m] [0m	/home/hacone/src/AgIn/src/main/scala/resources.scala[0m
+[0m[[33mwarn[0m] [0m/home/hacone/src/AgIn/src/main/scala/AgIn.scala:380: non-variable type argument List[String] in type pattern List[List[String]] is unchecked since it is eliminated by erasure[0m
+[0m[[33mwarn[0m] [0m        case (inputList: List[List[String]], outfile: String) => {[0m
+[0m[[33mwarn[0m] [0m                         ^[0m
+[0m[[33mwarn[0m] [0m/home/hacone/src/AgIn/src/main/scala/AgIn.scala:459: non-variable type argument List[String] in type pattern List[List[String]] is unchecked since it is eliminated by erasure[0m
+[0m[[33mwarn[0m] [0m        case (inputList: List[List[String]], outfile: String) => {[0m
+[0m[[33mwarn[0m] [0m                         ^[0m
+[0m[[33mwarn[0m] [0mtwo warnings found[0m
+[0m[[0minfo[0m] [0mAPI documentation generation successful.[0m

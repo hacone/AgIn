@@ -1,0 +1,31 @@
+[0m[[0mdebug[0m] [0m[0m
+[0m[[0mdebug[0m] [0mInitial source changes: [0m
+[0m[[0mdebug[0m] [0m	removed:Set()[0m
+[0m[[0mdebug[0m] [0m	added: Set()[0m
+[0m[[0mdebug[0m] [0m	modified: Set(/home/hacone/src/AgIn/src/test/scala/Test.scala)[0m
+[0m[[0mdebug[0m] [0mRemoved products: Set(/home/hacone/src/AgIn/target/test-classes/hacone/AgIn/Test$$anonfun$1$$anonfun$apply$mcV$sp$1$$anonfun$2.class, /home/hacone/src/AgIn/target/test-classes/hacone/AgIn/Test.class, /home/hacone/src/AgIn/target/test-classes/hacone/AgIn/Test$$anonfun$1$$anonfun$apply$mcV$sp$1$$anonfun$3.class, /home/hacone/src/AgIn/target/test-classes/hacone/AgIn/Test$$anonfun$1$$anonfun$apply$mcV$sp$1$$anonfun$4.class, /home/hacone/src/AgIn/target/test-classes/hacone/AgIn/Test$$anonfun$1.class, /home/hacone/src/AgIn/target/test-classes/hacone/AgIn/Test$$anonfun$1$$anonfun$apply$mcV$sp$1.class)[0m
+[0m[[0mdebug[0m] [0mModified external sources: Set()[0m
+[0m[[0mdebug[0m] [0mModified binary dependencies: Set()[0m
+[0m[[0mdebug[0m] [0mInitial directly invalidated sources: Set(/home/hacone/src/AgIn/src/test/scala/Test.scala)[0m
+[0m[[0mdebug[0m] [0m[0m
+[0m[[0mdebug[0m] [0mSources indirectly invalidated by:[0m
+[0m[[0mdebug[0m] [0m	product: Set(/home/hacone/src/AgIn/src/test/scala/Test.scala)[0m
+[0m[[0mdebug[0m] [0m	binary dep: Set()[0m
+[0m[[0mdebug[0m] [0m	external source: Set()[0m
+[0m[[0mdebug[0m] [0mInitially invalidated: Set(/home/hacone/src/AgIn/src/test/scala/Test.scala)[0m
+[0m[[0minfo[0m] [0mCompiling 1 Scala source to /home/hacone/src/AgIn/target/test-classes...[0m
+[0m[[0mdebug[0m] [0mInterfacing (CompilerInterface) with Scala compiler version 2.10.4[0m
+[0m[[0mdebug[0m] [0mCalling Scala compiler with arguments  (CompilerInterface):[0m
+[0m[[0mdebug[0m] [0m	-encoding[0m
+[0m[[0mdebug[0m] [0m	UTF-8[0m
+[0m[[0mdebug[0m] [0m	-deprecation[0m
+[0m[[0mdebug[0m] [0m	-unchecked[0m
+[0m[[0mdebug[0m] [0m	-d[0m
+[0m[[0mdebug[0m] [0m	/home/hacone/src/AgIn/target/test-classes[0m
+[0m[[0mdebug[0m] [0m	-bootclasspath[0m
+[0m[[0mdebug[0m] [0m	/usr/lib/jvm/java-6-openjdk-i386/jre/lib/resources.jar:/usr/lib/jvm/java-6-openjdk-i386/jre/lib/rt.jar:/usr/lib/jvm/java-6-openjdk-i386/jre/lib/sunrsasign.jar:/usr/lib/jvm/java-6-openjdk-i386/jre/lib/jsse.jar:/usr/lib/jvm/java-6-openjdk-i386/jre/lib/jce.jar:/usr/lib/jvm/java-6-openjdk-i386/jre/lib/charsets.jar:/usr/lib/jvm/java-6-openjdk-i386/jre/lib/jfr.jar:/usr/lib/jvm/java-6-openjdk-i386/jre/lib/netx.jar:/usr/lib/jvm/java-6-openjdk-i386/jre/lib/plugin.jar:/usr/lib/jvm/java-6-openjdk-i386/jre/lib/rhino.jar:/usr/lib/jvm/java-6-openjdk-i386/jre/classes:/home/hacone/.sbt/boot/scala-2.10.4/lib/scala-library.jar[0m
+[0m[[0mdebug[0m] [0m	-classpath[0m
+[0m[[0mdebug[0m] [0m	/home/hacone/src/AgIn/target/test-classes:/home/hacone/src/AgIn/target/classes:/home/hacone/.ivy2/cache/org.codehaus.plexus/plexus-classworlds/jars/plexus-classworlds-2.4.jar:/home/hacone/.ivy2/cache/net.sf.opencsv/opencsv/jars/opencsv-2.3.jar:/home/hacone/.ivy2/cache/org.xerial/xerial-core/jars/xerial-core-3.2.2.jar:/home/hacone/.ivy2/cache/org.scalatest/scalatest_2.10/bundles/scalatest_2.10-2.2.0.jar:/home/hacone/.ivy2/cache/org.scala-lang/scala-reflect/jars/scala-reflect-2.10.4.jar[0m
+[0m[[0mdebug[0m] [0m	/home/hacone/src/AgIn/src/test/scala/Test.scala[0m
+[0m[[0mdebug[0m] [0m	Invalidated direct: Set()[0m
+[0m[[0mdebug[0m] [0mIncrementally invalidated: Set()[0m
