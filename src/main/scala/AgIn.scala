@@ -30,6 +30,8 @@ object AgIn extends xerial.core.log.Logger {
   def main(args:Array[String]) {
     // here i place general settings used for every type of task
     // Some are set by convention, and others by configuration (config.dat file)
+
+    /*
     val configures = Source.fromFile("./input/config.dat").getLines
                            .map(_.split('=').map(_.trim))
     val seglen = configures.find(_(0)=="L").getOrElse(Array("Default", "50"))(1).toInt
@@ -37,6 +39,7 @@ object AgIn extends xerial.core.log.Logger {
     val fastapath = "./input/" + configures.find(_(0)=="Reference")
                                  .getOrElse(Array("Default", "GenRef.fasta"))(1)
     val vn = Resources.veclda
+    */
 
     val ipdpath = "./input/IPD/"
     val wigcovpath = "./input/wigcov/"
@@ -44,6 +47,7 @@ object AgIn extends xerial.core.log.Logger {
 
     // calculate ita scores for each position from IPD profile, effective coverage, and Beta vector
     // TODO: short cut intermemiate result
+    /*
     def prfstoIta(prfs: List[(Int, Profile)]): List[Double] = {
       def weightedProd(v: List[Double], u: List[Double], w: List[Double]): Double = {
         v.zip(u).zip(w).foldLeft(0.0)((s,t) => s + t._2*t._1._1*t._1._2)
@@ -53,8 +57,10 @@ object AgIn extends xerial.core.log.Logger {
           {for (i <- -10 to 10) yield p._2.cov(i).toDouble }.toList)
       }.toList
     }
+    */
 
     // using ita, calculate final scores for given intercept. then call segmentation algorithm
+    /*
     def callSegmentationIta(prfs: List[(Int, Profile)], ic: Double, ita: List[Double]): List[(Int, Double, Int)] = {
       val fm: Double => Double = { s => (s) }
       val fum: Double => Double = { s => -(s) } 
@@ -68,8 +74,10 @@ object AgIn extends xerial.core.log.Logger {
         (a, b, c) // position, score, class
       }}.toList
     }
+    */
 
     // given segmentation, calculate sensitivity and other metrics, compared to bisulfite-seq as an answer set
+    /*
     def evalPrediction(seg: List[(Int, Int)], bis: Array[Bisulfite]): Map[String, Double] = { // seg: List[(Position, class)]
       def sens(a: (Double,Double,Double,Double)): Double = { a._1/(a._1+a._4) }
       def prec(a: (Double,Double,Double,Double)): Double = { a._1/(a._1+a._3) }
@@ -112,9 +120,11 @@ object AgIn extends xerial.core.log.Logger {
         "spec" -> spec(t), "prec" -> prec(t), "f1" -> f1(t), "mcc" -> mcc(t),
         "nipd" -> seg.length.toDouble, "neval" -> (tp+tn+fp+fn))
     }
+    */
     
     // given segmentation, zip each CpG site with bisulfite score on it.
     // When bisulfite score is missing, a negative number is assigned anyway
+    /*
     def zipBis(seg: List[(Int, Int)], bis: Array[Bisulfite]): List[(Int, Int, Double)] = {
       val b = scala.collection.mutable.ListBuffer.empty[(Int, Int, Double)]
       var i = 0
@@ -168,13 +178,14 @@ object AgIn extends xerial.core.log.Logger {
       }
       b.result
     }
+    */
 
     // start of main: declaring handler of each task specified by task/**.json
     // TODO: it may be better to separate these task-specific functions. definitely...
 
     // write out IPDR profile and bisulfite score of each CpG site for estimation of a vector beta
+    /*
     def extractProfile(protocol: Map[String, Any]): Unit = {
-      /*
       (protocol("input"), protocol("output")) match {
         case (inputList: List[List[String]], outfile: String) => {
           for (input <- inputList) {
@@ -201,11 +212,11 @@ object AgIn extends xerial.core.log.Logger {
         }
         case _ => println("missing or invalid input(output) field"); sys.exit
       }
-      */
     }
+    */
 
+    /*
     def trainBeta(protocol: Map[String, Any]): Unit = {
-      /*
       (protocol("input"), protocol("output")) match {
         case (inputList: List[List[String]], outfile: String) => {
           for (input <- inputList) {
@@ -251,11 +262,11 @@ object AgIn extends xerial.core.log.Logger {
         }
         case _ => println("missing or invalid input(output) field"); sys.exit
       }
-      */
     }
+    */
 
+    /*
     def pointwisePrediction(protocol: Map[String, Any]): Unit = {
-      /*
       (protocol("input"), protocol("output")) match {
         case (inputList: List[List[String]], outfile: String) => {
           for (input <- inputList) {
@@ -300,9 +311,10 @@ object AgIn extends xerial.core.log.Logger {
         }
         case _ => println("missing or invalid input(output) field"); sys.exit
       }
-      */
     }
+    */
     
+    /*
     def getGCrate(sequence: String): List[(Int, Double)] = {
       var rate = 0.0
       var nrate = 0.0
@@ -374,8 +386,9 @@ object AgIn extends xerial.core.log.Logger {
       }}}.toList.filter(x=>x._2>0)sortWith((x,y) => x._1 < y._1)
       anys.filter(x => lot.exists(s => s._1 <= x._2 && x._2 < s._2)) // inverse !!!
     }
+    */
 
-
+    /*
     def reportCoverage(protocol: Map[String, Any]): Unit = { // evaluation of coverage (comparison to bisulfite data)
       (protocol("input"), protocol("output")) match {
         case (inputList: List[List[String]], outfile: String) => {
@@ -398,16 +411,6 @@ object AgIn extends xerial.core.log.Logger {
                 // val fcpgs = filterNewseq(cpgs.map(x=>(x,x)), refname).map(x=>x._1)
                 // println("%s %d".format(refname, fcpgs.length))
 
-
-                /*
-                val filtgcnew = binAny(filterNewseq(gc.map(x=>(x._2,x._1)), refname), gc)
-                val filtgcold = binAny(filterNewseqRev(gc.map(x=>(x._2,x._1)), refname), gc)
-                print(refname)
-                for (((bin, f), (b, g)) <- filtgcnew.zip(filtgcold)) {
-                  print("%3d %5d %5d ".format(bin, f.length, g.length))
-                }
-                println("")
-                */
                 val binnedCpG = binCpGs(cpgs, gc)
                 val binnedPac = binAny(prfs.map(x=>(x._2,x._1)), gc)
 
@@ -454,7 +457,9 @@ object AgIn extends xerial.core.log.Logger {
         case _ => println("missing or invalid input(output) field"); sys.exit
       }
     }
+    */
 
+    /*
     def testOnUnseen(protocol: Map[String, Any]): Unit = { // evaluation of predictive power within unseen data (comparison to bisulfite data)
       (protocol("input"), protocol("output")) match {
         case (inputList: List[List[String]], outfile: String) => {
@@ -510,7 +515,6 @@ object AgIn extends xerial.core.log.Logger {
                 // val scores = scoreSegments(segmentSegments(optseg), ((a:Double) => a))
 
                 // TODO: TODO TODO TODO TODO TODO 
-                /*
                 for (ksi <- (0*20 to 10*20).map(_/40.0) ++
                                (10*10+1 to 20*10).map(_/20.0)) {
                   val toeval0 = {for (l <- scores.zip(segmentSegments(optseg)); if abs(l._1._3) > ksi) yield {
@@ -526,9 +530,7 @@ object AgIn extends xerial.core.log.Logger {
                     evp("sens"), evp("spec"), evp("prec"), evp("f1"), minabs
                   ))
                 }
-                */
 
-                /*
                 for (nd <- 0 to 10) {
                 val toeval = {
                   val ksi = 0.0 // should not be here ??
@@ -546,14 +548,12 @@ object AgIn extends xerial.core.log.Logger {
                     evp("sens"), evp("spec"), evp("prec"), evp("f1")))
                 }
                 println("")
-                */
 
                 // val filledhypo = findFilledHypo(segmentSegments(optseg), bis)
                 // val zb = zipBis(toeval, bis)
 
                 // write out result
                 
-                /*
                 for ((((a,b,c),p),z) <- optseg.zip(prfs).zip(zb)) logfile.println("%d %f %d %f %f".format(a, b, c, p._2.mcv, z._3))
                 val confile = new java.io.PrintWriter("IPDConfval.dat")
                 for ((a, b, c, h) <- filledhypo) confile.println("%d %d %f %f".format(a, b, c, h))
@@ -595,7 +595,6 @@ object AgIn extends xerial.core.log.Logger {
                   for (r <- gc) { gcfile.println("%d %f".format(r._1, r._2)) }
                   gcfile.close
                 }
-                */
               }
               case _ => println("invalid input file list: %s".format(input)) 
             }
@@ -605,7 +604,9 @@ object AgIn extends xerial.core.log.Logger {
         case _ => println("missing or invalid input(output) field"); sys.exit
       }
     }
+    */
 
+    /*
     def predictOnRealCase(protocol: Map[String, Any]): Unit = {
       info("gamma = %f".format(gamma))
       (protocol("input"), protocol("output")) match {
@@ -658,6 +659,7 @@ object AgIn extends xerial.core.log.Logger {
         case _ => println("missing or invalid input(output) field"); sys.exit
       }
     }
+    */
 
     def parseOpt(opts: List[String]): Map[String, String] = opts match {
       case ("-h" :: rest) => Map("help" -> "True")
@@ -688,12 +690,15 @@ object AgIn extends xerial.core.log.Logger {
         case Some(p) => {
           val protocol = p.asInstanceOf[Map[String, Any]]
           protocol("task") match {
+            // TODO: Uncomment if you need this
+            /*
             case "extract-profile" => extractProfile(protocol)
             case "train-beta0" => trainBeta(protocol)
             case "pointwise-prediction" => pointwisePrediction(protocol)
             case "testOnUnseen" => testOnUnseen(protocol)
             case "predictOnRealCase" => predictOnRealCase(protocol)
             case "reportCoverage" => reportCoverage(protocol)
+            */
             case _ => println("unknown task")
           }
           println("task done")

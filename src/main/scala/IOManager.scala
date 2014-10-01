@@ -89,7 +89,7 @@ object IOManager extends xerial.core.log.Logger {
       } else { first = false }
 
       class Itr extends Iterator[T] {
-        var _hasNext = true
+        var _hasNext = true // TODO: you cant assume this !!
         def hasNext(): Boolean = _hasNext
         def next(): T = {
           val ret = bit.next()
@@ -120,7 +120,8 @@ object IOManager extends xerial.core.log.Logger {
       _it.map(x => parseOne(x.toList)).buffered
     }
 
-    for (_itForChr <- new GroupIterator(it, (a: NameIPD, b: NameIPD) => a._1 == b._1); itForChr = _itForChr.buffered) yield {
+    // TODO: this check should be treated in the constructor of GroupIterator
+    for (_itForChr <- new GroupIterator(it, (a: NameIPD, b: NameIPD) => a._1 == b._1); itForChr = _itForChr.buffered; if itForChr.hasNext) yield {
       val ni = itForChr.head._2
       info("next head: %d %d %.3f %d".format(ni._1, ni._2, ni._3, ni._4))
       (itForChr.head._1.takeWhile(!_.isWhitespace), setupArrIt(itForChr.map(_._2)))
@@ -211,6 +212,7 @@ object IOManager extends xerial.core.log.Logger {
     }
 
 
+  // TODO: for now, wig must be in 1-origin
   def readWigAsArray(fileScore: String, fileCover: String): Array[Bisulfite] = {
     val buffer = ArrayBuffer.empty[Bisulfite]
     for (((_score, _cover), _index) <- Source.fromFile(fileScore).getLines.zip(
@@ -223,6 +225,7 @@ object IOManager extends xerial.core.log.Logger {
     buffer.toArray
   }
 
+  // deprecated
   def readWigWithConv(fileScore: String, fileCover: String, refname: String): Array[Bisulfite] = {
     val lot = {for (l <- Source.fromFile("input/LOT_nona_contig.dat").getLines.filter(_.contains(refname))) yield {
       l.split(' ').toList match {
