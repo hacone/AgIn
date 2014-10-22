@@ -3,3 +3,4 @@
 .idea
 .idea_modules
 *.stackdump
+task/*

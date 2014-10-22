@@ -72,6 +72,7 @@ object IOManager extends xerial.core.log.Logger {
   }
 
   // TODO (solved?): Exhaust remaining element in the Iterator
+  // Split Iterator according to a predicate p (split when p gives false)
   class GroupIterator[T](it: Iterator[T], p: (T, T) => Boolean) extends Iterator[Iterator[T]] {
     val bit = it.buffered
     var last: Option[T] = None
@@ -110,20 +111,24 @@ object IOManager extends xerial.core.log.Logger {
     def parseOne(line: List[String]): NameIPD = line match {
       case rname::_pos:: _str:: base:: score:: tMean:: tErr:: modelP:: _ipd:: _cov:: rest =>
         (rname, (_str.toInt, _pos.toLong, _ipd.toDouble, _cov.toInt))
-      case _ => error("ill formed line parsing \"%s\" in %s".format(line, filename)); ("error", (0,0,0.0,0))
+      case _ => {
+        error("An ill-formed line when parsing \"%s\" in %s".format(line, filename));
+        ("_ERROR_", (0,0,0.0,0))
+      }
     }
 
     val reader = new CSVReader(new FileReader(filename))
     val it = {
       val _it = Iterator.continually(reader.readNext).takeWhile(_ != null)
       _it.next() // skip the header line that can't be parsed
-      _it.map(x => parseOne(x.toList)).buffered
+      _it.map(x => parseOne(x.toList))
+      .filter(_._1 != "_ERROR_").buffered
     }
 
     // TODO: this check should be treated in the constructor of GroupIterator
     for (_itForChr <- new GroupIterator(it, (a: NameIPD, b: NameIPD) => a._1 == b._1); itForChr = _itForChr.buffered; if itForChr.hasNext) yield {
       val ni = itForChr.head._2
-      info("next head: %d %d %.3f %d".format(ni._1, ni._2, ni._3, ni._4))
+      // info("next head: %d %d %.3f %d".format(ni._1, ni._2, ni._3, ni._4))
       (itForChr.head._1.takeWhile(!_.isWhitespace), setupArrIt(itForChr.map(_._2)))
     }
 
@@ -168,49 +173,6 @@ object IOManager extends xerial.core.log.Logger {
       val result = new ArrayIterator(new IPDIterator(line), 100)
       result
     }
-
-    // deprecated
-    def setupArray(linestr: List[IPDTuple]): Array[PacBioIPD] = {
-      val nullIPD = PacBioIPD(-1.0, 0, 0.0, -1.0, 0, 0.0)
-
-      // str are to be sorted as 10 10 10 ... 
-      // but PacBioIPD are const'ed as (data for 0, data for 1)
-      def takePair(linestr: List[IPDTuple]): (Long, PacBioIPD, List[IPDTuple])  = {
-        val fst = linestr.head
-        if (linestr.tail.isEmpty) {
-          if (fst._1 == 0) (fst._2, PacBioIPD(fst._3, fst._4, 0.0, -1.0, 0, 0.0), linestr.tail)
-          else (fst._2, PacBioIPD(-1.0, 0, 0.0, fst._3, fst._4, 0.0), linestr.tail)
-        } else {
-          val snd = linestr.tail.head
-          if (fst._2 == snd._2) {
-            if (fst._1 == 0) (fst._2, PacBioIPD(fst._3, fst._4, 0.0, snd._3, snd._4, 0.0),
-                              linestr.tail.tail)
-            else (fst._2, PacBioIPD(snd._3, snd._4, 0.0, fst._3, fst._4, 0.0),
-                                    linestr.tail.tail)
-          } else {
-            if (fst._1 == 0) (fst._2, PacBioIPD(fst._3, fst._4, 0.0, -1.0, 0, 0.0), linestr.tail)
-            else (fst._2, PacBioIPD(-1.0, 0, 0.0, fst._3, fst._4, 0.0), linestr.tail)
-          }
-        }
-      }
-
-      val buffer = ArrayBuffer.empty[PacBioIPD]
-      @scala.annotation.tailrec
-      def recur(n: Long, str: List[IPDTuple]): Unit = {
-        if (str.isEmpty) return
-        else {
-          val (pos, ipd, next) = takePair(str)
-          val diff: Int = (pos - n).toInt
-          buffer ++= Array.fill(diff)(nullIPD)
-          buffer += ipd
-          recur(pos+1, next)
-        }
-      }
-
-      recur(0, linestr)
-      buffer.toArray
-    }
-
 
   // TODO: for now, wig must be in 1-origin
   def readWigAsArray(fileScore: String, fileCover: String): Array[Bisulfite] = {
