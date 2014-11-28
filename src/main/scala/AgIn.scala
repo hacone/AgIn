@@ -678,7 +678,6 @@ object AgIn extends xerial.core.log.Logger {
 
       case ("-c" :: rest) => Map("continuous" -> "True") ++ parseOpt(rest)
 
-      // case ("-w" :: infile :: rest) => Map("wigdir" -> infile) ++ parseOpt(rest)
       case (command :: Nil) => Map("command" -> command)
       case _ => {
         error("ERROR: parseOpt: ill-formed arguments")
