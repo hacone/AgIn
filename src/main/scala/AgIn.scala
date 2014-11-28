@@ -676,6 +676,8 @@ object AgIn extends xerial.core.log.Logger {
       case ("-b" :: beta :: rest) => Map("beta" -> beta) ++ parseOpt(rest)
       case ("-g" :: gamma :: rest) => Map("gamma" -> gamma) ++ parseOpt(rest)
 
+      case ("-c" :: rest) => Map("continuous" -> "True") ++ parseOpt(rest)
+
       // case ("-w" :: infile :: rest) => Map("wigdir" -> infile) ++ parseOpt(rest)
       case (command :: Nil) => Map("command" -> command)
       case _ => {

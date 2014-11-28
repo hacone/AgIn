@@ -335,4 +335,12 @@ object IOManager extends xerial.core.log.Logger {
     for ((idx, _, c) <- segment) wig.println("%d %d".format(idx, c))
     wig.close
   }
+
+  def writeContinuousPredictionToWig(outfile: String, refname: String,
+                                     prediction: List[(Int, Int)]): Unit = {
+    val wig = new java.io.PrintWriter(new java.io.FileWriter(outfile+"_continuous_class.wig", true))
+    wig.println("variableStep chrom=%s".format(refname))
+    for ((idx, c) <- prediction) wig.println("%d %d".format(idx, c))
+    wig.close
+  }
 }

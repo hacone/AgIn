@@ -183,6 +183,8 @@ object Tasks extends xerial.core.log.Logger {
           resources.Resources.veclda
         }
       }
+      // whether to perform continuous prediction using arrays of gammas
+      val continuous = opts.get("continuous").getOrElse("False").toBoolean
       val commands = opts.get("Full-Commands").getOrElse("???")
 
       info("minlen, gamma = %d %f".format(min_length, gamma))
@@ -219,6 +221,20 @@ object Tasks extends xerial.core.log.Logger {
             IOManager.writeCoverageToWig(outfile, refname, ita)
             IOManager.writeClassToWig(outfile, refname, optseg)
           }
+
+          // TODO: any rational selection of derivation of the list?
+          if (continuous) {
+            val gamma_list = (-10 to 10)
+              .toList.map(i => gamma + scala.math.abs(gamma)*(i/10.0))
+            val optseg_continuous = gamma_list.map(g => callSegmentationIta(ita, g, min_length)
+              .map(_._3)).transpose.map { pos => 
+                val (zeros, ones) = pos.span(_==0)
+                assert(ones.forall(_==1))
+                zeros.length
+            }
+            IOManager.writeContinuousPredictionToWig(
+              outfile, refname, ita.map(_._1).zip(optseg_continuous))
+          }
         }
       }
     }
@@ -246,7 +262,7 @@ object Tasks extends xerial.core.log.Logger {
       }}.toList
     }
 
-    // TODO: may be good to write this in fold
+    // TODO: may be good to write this as fold
     // group the elements of a list, from its head, according to result of fn
     def groupWith[T](fn: T => Any)(list: List[T]): List[List[T]] = {
       val b = scala.collection.mutable.ListBuffer.empty[List[T]]
