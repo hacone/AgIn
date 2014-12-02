@@ -222,15 +222,15 @@ object Tasks extends xerial.core.log.Logger {
             IOManager.writeClassToWig(outfile, refname, optseg)
           }
 
-          // TODO: any rational selection of derivation of the list?
+          // TODO: any rational selection of derivation of the gamma list?
           if (continuous) {
-            val gamma_list = (-10 to 10)
-              .toList.map(i => gamma + scala.math.abs(gamma)*(i/10.0))
+            val gamma_list = (-20 to 20)
+              .toList.map(i => gamma + scala.math.abs(gamma)*(i/20.0))
             val optseg_continuous = gamma_list.map(g => callSegmentationIta(ita, g, min_length)
               .map(_._3)).transpose.map { pos => 
-                val (zeros, ones) = pos.span(_==0)
-                assert(ones.forall(_==1))
-                zeros.length
+                val ones  = pos.count(_==1)
+                val zeros = pos.count(_==0)
+                zeros
             }
             IOManager.writeContinuousPredictionToWig(
               outfile, refname, ita.map(_._1).zip(optseg_continuous))
