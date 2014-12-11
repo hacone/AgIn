@@ -76,8 +76,6 @@ object Tasks extends xerial.core.log.Logger {
         }
 
         loop (mcpgs, ucpgs)
-        // TODO: this won't run; index-ref constraint of ipds will be violated
-        //       << removed >>
 
         // TODO: compute LDA vector here using matrix calculation
         // TODO: for now, I use simple average as beta vector
@@ -224,14 +222,12 @@ object Tasks extends xerial.core.log.Logger {
 
           // TODO: any rational selection of derivation of the gamma list?
           if (continuous) {
-            val gamma_list = (-20 to 20)
-              .toList.map(i => gamma + scala.math.abs(gamma)*(i/20.0))
-            val optseg_continuous = gamma_list.map(g => callSegmentationIta(ita, g, min_length)
-              .map(_._3)).transpose.map { pos => 
-                val ones  = pos.count(_==1)
-                val zeros = pos.count(_==0)
-                zeros
-            }
+            val perturbations = (12 to -8 by -1).toList.map(_/25.0)
+            val gamma_list = perturbations.map(p => gamma*(1+p))
+            val optseg_continuous = gamma_list.map {
+                g => callSegmentationIta(ita, g, min_length).map(_._3)
+              }.transpose.map { pos => pos.count(_==1)-9 }
+
             IOManager.writeContinuousPredictionToWig(
               outfile, refname, ita.map(_._1).zip(optseg_continuous))
           }
