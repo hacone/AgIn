@@ -78,7 +78,7 @@ object Tasks extends xerial.core.log.Logger {
         loop (mcpgs, ucpgs)
 
         // TODO: compute LDA vector here using matrix calculation
-        // TODO: for now, I use simple average as beta vector
+        // TODO: for now, I may use simple average as beta vector
         info(avg_mprofs.map(_ / n_mprofs).mkString(", "))
         info(avg_uprofs.map(_ / n_uprofs).mkString(", "))
       }
@@ -88,6 +88,30 @@ object Tasks extends xerial.core.log.Logger {
       m_outpw.close
       um_outpw.close
     }
+
+    def loadBeta(filename: String): List[Double] = filename match {
+      // These 2 for compatibility with older spec
+      case "P5C3_HdrR" => resources.Resources.p5c3
+      case "LDAVector" => resources.Resources.p4c2
+
+      // This is the main case: please specify beta by file
+      case fname => {
+        try {
+          info("loading Beta vector from file: %s".format(fname))
+          val _beta: List[Double] = scala.io.Source.fromFile(fname).getLines.toList.map(_.toDouble)
+          assert(_beta.length == 21)
+
+          val norm = scala.math.sqrt(_beta.fold(0.0){ (a:Double,b:Double) => a + b*b })
+          _beta.map(_ / norm)
+        } catch {
+          case (ex: Exception) => {
+            info(ex)
+            info("Default to LDA vector from P4C2.")
+            resources.Resources.p4c2
+          }
+        }
+      }
+    }
     
     //  this correspond to <trainbeta> task
     def makeROC(opts: Map[String, String]): Unit = {
@@ -95,16 +119,7 @@ object Tasks extends xerial.core.log.Logger {
       val outfile = opts.get("outputFile").getOrElse("performance")
       val fasta = opts.get("fastaFile").getOrElse("default.fasta")
       val min_length = opts.get("min_length").getOrElse("50").toInt
-
-      val beta = opts.get("beta").getOrElse("LDAVector") match {
-        case "P5C3_HNI" => resources.Resources.p5hni_veclda
-        case "P5C3_HdrR" => resources.Resources.p5hdrr_veclda
-        case "LDAVector" => resources.Resources.veclda
-        case _ => {
-          info("using default vector: veclda")
-          resources.Resources.veclda
-        }
-      }
+      val beta = loadBeta(opts.get("beta").getOrElse("LDAVector"))
 
       val (refname, ipds) = IOManager.loadIPD(infile).next()
       info("Handling %s : len(ipds) = ???".format(refname))
@@ -172,15 +187,8 @@ object Tasks extends xerial.core.log.Logger {
       val fasta = opts.get("fastaFile").getOrElse("default.fasta")
       val min_length = opts.get("min_length").getOrElse("50").toInt
       val gamma = opts.get("gamma").getOrElse("-1.80").toDouble
-      val beta = opts.get("beta").getOrElse("LDAVector") match {
-        case "P5C3_HNI" => resources.Resources.p5hni_veclda
-        case "P5C3_HdrR" => resources.Resources.p5hdrr_veclda
-        case "LDAVector" => resources.Resources.veclda
-        case _ => {
-          info("using default vector: veclda")
-          resources.Resources.veclda
-        }
-      }
+      val beta = loadBeta(opts.get("beta").getOrElse("LDAVector"))
+
       // whether to perform continuous prediction using arrays of gammas
       val continuous = opts.get("continuous").getOrElse("False").toBoolean
       val commands = opts.get("Full-Commands").getOrElse("???")
@@ -222,11 +230,11 @@ object Tasks extends xerial.core.log.Logger {
 
           // TODO: any rational selection of derivation of the gamma list?
           if (continuous) {
-            val perturbations = (12 to -8 by -1).toList.map(_/25.0)
+            val perturbations = (6 to -3 by -1).toList.map(_/25.0)
             val gamma_list = perturbations.map(p => gamma*(1+p))
             val optseg_continuous = gamma_list.map {
                 g => callSegmentationIta(ita, g, min_length).map(_._3)
-              }.transpose.map { pos => pos.count(_==1)-9 }
+              }.transpose.map { pos => pos.count(_==1)/10.0 }
 
             IOManager.writeContinuousPredictionToWig(
               outfile, refname, ita.map(_._1).zip(optseg_continuous))

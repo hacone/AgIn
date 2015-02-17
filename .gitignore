@@ -3,4 +3,10 @@
 .idea
 .idea_modules
 *.stackdump
+bin/*
+target/*
+project/*
+
 task/*
+input/*
+data/*
