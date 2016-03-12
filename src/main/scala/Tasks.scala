@@ -243,6 +243,52 @@ object Tasks extends xerial.core.log.Logger {
       }
     }
 
+    def showScores(opts: Map[String, String]): Unit = {
+      val infile = opts.get("inputFile").getOrElse("modifications.csv")
+      val outfile = opts.get("outputFile").getOrElse("predict")
+      val fasta = opts.get("fastaFile").getOrElse("default.fasta")
+      // don't need this // val min_length = opts.get("min_length").getOrElse("50").toInt
+      val gamma = opts.get("gamma").getOrElse("-1.80").toDouble
+      val beta = loadBeta(opts.get("beta").getOrElse("LDAVector"))
+
+      // whether to perform continuous prediction using arrays of gammas
+      val continuous = opts.get("continuous").getOrElse("False").toBoolean
+      val commands = opts.get("Full-Commands").getOrElse("???")
+
+      info(s"gamma = ${gamma}")
+
+      for ((refname, ipds) <- IOManager.loadIPD(infile)) {
+        // info("Handling %s : len(ipds) = %d".format(refname, ipds.length))
+        info("Handling %s : len(ipds) = ???".format(refname))
+
+        // TODO: how can I manage this inter dependency of variable
+        //       to get better GC and calculation policies ?
+        // TODO: fusion 
+        val dna_seq = IOManager.readSequenceAsString(fasta, refname)
+        info("len(dna_seq) = %d".format(dna_seq.length))
+        val cpgs = Profiling.findAllCpG(dna_seq)
+        info("len(cpgs) = %d".format(cpgs.length))
+
+        // position, ita, coverage
+        val ita: List[(Int, Double, Double)] = {for {
+          i <- cpgs
+          prf <- Profiling.makeProfile(ipds, i)
+          if prf.mcv > 0
+        } yield (i, Classifier.Predictor.toIta0(prf, beta), prf.mcv)}.toList
+
+        info("len(ita) = %d".format(ita.length))
+        info("# position, ita(score)_raw, coverage")
+
+        // write out in wig
+
+        println(s"chrom=${refname} variableStep")
+        ita.foreach { i =>
+          println(s"${i._1} ${i._2}")
+        }
+      }
+    }
+
+
     def printHelp() {
         println("AgIn: <explanation>")
     }

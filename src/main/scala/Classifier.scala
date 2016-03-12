@@ -52,5 +52,12 @@ package Classifier {
         (-10 to 10).toList.map { i => p.cov(i).toDouble }
       )
     }
+
+    def toIta0(p: Profile, vn: List[Double]): Double = {
+      weightedProd(
+        (-10 to 10).toList.map { i => p(i) }, vn,
+        (-10 to 10).toList.map { i => 1.0 }
+      )
+    }
   }
 }
