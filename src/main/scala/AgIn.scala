@@ -25,7 +25,7 @@ case class PacBioIPD(fipd: Double, fcov: Int, fvar: Double, ripd: Double, rcov: 
 
 object AgIn extends xerial.core.log.Logger {
 
-  type Tsegment = (Int, Int, Double, Int) // begin, end, avg.score, size(#CpG)
+type Tsegment = (Int, Int, Double, Int) // begin, end, avg.score, size(#CpG)
 
   def main(args:Array[String]) {
 
@@ -53,36 +53,11 @@ object AgIn extends xerial.core.log.Logger {
       }
     }
 
-    // of course, deprecated
-    def legacyJob(jsonpath: String): Unit = {
-      JSON.parseFull(Source.fromFile("task/%s.json".format(jsonpath)).getLines.foldLeft("")(_+"\n"+_)) match {
-        case Some(p) => {
-          val protocol = p.asInstanceOf[Map[String, Any]]
-          protocol("task") match {
-            // TODO: Uncomment if you need this
-            /*
-            case "extract-profile" => extractProfile(protocol)
-            case "train-beta0" => trainBeta(protocol)
-            case "pointwise-prediction" => pointwisePrediction(protocol)
-            case "testOnUnseen" => testOnUnseen(protocol)
-            case "predictOnRealCase" => predictOnRealCase(protocol)
-            case "reportCoverage" => reportCoverage(protocol)
-            */
-            case _ => println("unknown task")
-          }
-          println("task done")
-        }
-        case _ => println("json parse error")
-      }
-    }
-
     // true entry point
     // TODO: Use Monadic pattern
     val opts = parseOpt(args.toList) + ("Full-Commands" -> args.mkString(" "))
-    opts.get("legacy") match {
-    case Some(path) => legacyJob(path)
 
-    case None =>  opts.get("help") match {
+    opts.get("help") match {
     case Some(_) => Tasks.printHelp()
 
     case None => opts.get("command") match {
@@ -91,9 +66,10 @@ object AgIn extends xerial.core.log.Logger {
       case "predict" => Tasks.predict(opts)
       case "makeROC" => Tasks.makeROC(opts)
       case "showScores" => Tasks.showScores(opts)
+      case "profileOn2mer" => Tasks.profileOn2mer(opts)
       case _ => error("unknown command: %s".format(command))
       }
     case None => error("missing command")
-    }}}
+    }}
   }
 }

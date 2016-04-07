@@ -3,7 +3,60 @@ package hacone.AgIn
 import hacone.AgIn._
 
 object Tasks extends xerial.core.log.Logger {
-    // TODO: this won't run for now; write this today !
+    def profileOn2mer(opts: Map[String, String]): Unit = {
+      val infile = opts.get("inputFile").getOrElse("modifications.csv")
+      val outfile = opts.get("outputFile").getOrElse("profiles.dat")
+      val fasta = opts.get("fastaFile").getOrElse("default.fasta")
+
+      val avg_profs = new Array[Array[Double]](16)
+      (0 to 15).foreach { i => avg_profs(i) = new Array[Double](21) }
+      val n_profs = new Array[Int](16)
+
+      def code2mer(s: String): Int = {
+        def codeBase(c: Char): Int = c match {
+          case 'A' => 0
+          case 'C' => 1
+          case 'G' => 2
+          case 'T' => 3
+          case  _  => 0
+        }
+        codeBase(s(0))*4 + codeBase(s(1))
+      }
+
+      def decode2mer(i: Int): String = {
+        assert(0<=i && i<16)
+        def decodeBase(j: Int): String = j match {
+          case 0 => "A"
+          case 1 => "C"
+          case 2 => "G"
+          case 3 => "T"
+          case  _  => ""
+        }
+        decodeBase(i%4) + decodeBase(i/4)*4
+      }
+
+      for ((refname, ipds) <- IOManager.loadIPD(infile)) {
+        info("Handling %s : len(ipds) = ???".format(refname))
+
+        val dna_seq = IOManager.readSequenceAsString(fasta, refname)
+        info("len(dna_seq) = %d".format(dna_seq.length))
+
+        for {
+          i <- 10 to (dna_seq.length - 11)
+          prf <- Profiling.makeProfile(ipds, i)
+          if prf.mcv > 0 
+        } {
+          val code = code2mer(dna_seq.slice(i, i+2))
+          (-10 to 10).foreach { k => avg_profs(code)(k+10) += prf(k) }
+          n_profs(code) += 1
+        }
+      }
+
+      for (i <- 0 to 15) {
+        info(decode2mer(i) + ", " + avg_profs(i).map(_ / n_profs(i)).mkString(", "))
+      }
+    }
+
     def profile(opts: Map[String, String]): Unit = {
 
       // should raise some warning if filenames are not specified
