@@ -32,7 +32,7 @@ object Tasks extends xerial.core.log.Logger {
           case 3 => "T"
           case  _  => ""
         }
-        decodeBase(i%4) + decodeBase(i/4)*4
+        decodeBase(i/4) + decodeBase(i%4)
       }
 
       for ((refname, ipds) <- IOManager.loadIPD(infile)) {

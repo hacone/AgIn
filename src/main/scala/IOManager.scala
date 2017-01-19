@@ -252,7 +252,7 @@ object IOManager extends xerial.core.log.Logger {
     // find index for refname from .fai file
     var refIndex = ("not found", 0, 0:Long, 0, 0)
     info("look for fasta: " ++ filename)
-    Source.fromFile(filename + ".fai").getLines.find(_.contains(refname)) match {
+    Source.fromFile(filename + ".fai").getLines.find(_.split('\t')(0) == refname) match {
       case Some(l) =>
         l.split('\t').toList match {
           // name, len, from, chars, bytes
