@@ -12,7 +12,7 @@ object ProjectBuild extends Build {
        ++ Seq(PackageTask.packageDistTask) 
        ++ PackageTask.distSettings 
        ++ Seq(
-       	  scalaVersion := "2.10.4",
+       	  scalaVersion := "2.11.8",
           organization := "ysuzuki.mlab",
        	  version := "1.0",
        	  scalacOptions ++= Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
