@@ -12,7 +12,7 @@ object ProjectBuild extends Build {
        ++ Seq(PackageTask.packageDistTask) 
        ++ PackageTask.distSettings 
        ++ Seq(
-       	  scalaVersion := "2.11.8",
+       	  scalaVersion := "2.10.7",
           organization := "ysuzuki.mlab",
        	  version := "1.0",
        	  scalacOptions ++= Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
@@ -22,10 +22,8 @@ object ProjectBuild extends Build {
        	  libraryDependencies ++= Seq(
             "org.codehaus.plexus" % "plexus-classworlds" % "2.4",
             "org.scalatest" % "scalatest_2.10" % "2.2.0" % "test",
-
 	          // Add other libraries here
             "net.sf.opencsv" % "opencsv" % "2.3",
-
             // "io.argonaut" %% "argonaut" % "6.1-M2",
             // "io.argonaut" %% "argonaut" % "6.0.4",
             // "org.scalaz" % "scalaz-core_2.11" % "7.1.0-M7",
